@@ -21,7 +21,7 @@ oauth2 = OAuth2Component(
 )
 
 if 'credentials' not in st.session_state:
-    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI)
+    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI, SCOPE)
 
     st.write("OAuth Result:", result)  # Debugging output
 
