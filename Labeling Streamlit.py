@@ -33,7 +33,7 @@ if 'credentials' not in st.session_state:
         if access_token:
             creds = Credentials(token=access_token)
             st.session_state["credentials"] = creds
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("OAuth response missing 'access_token'. Full response:")
             st.json(result)  # Show full response for debugging
@@ -51,7 +51,7 @@ if 'credentials' in st.session_state:
         files = drive_service.files().list(q="mimeType='text/csv'", fields='files(id, name)').execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
 
-    files = fetch_drive_files(service=drive_service)
+    files = fetch_drive_files()
     selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
 
     if selected_file_name:
