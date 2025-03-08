@@ -49,7 +49,6 @@ if 'credentials' in st.session_state:
     # Fetch CSV files from Google Drive
     def fetch_drive_files():
         files = drive_service.files().list(q="mimeType='text/csv'", fields='files(id, name)').execute()
-        st.write("Google Drive API Response:", files)
         return {file['name']: file['id'] for file in files.get('files', [])}
 
 
@@ -67,7 +66,12 @@ if 'credentials' in st.session_state:
 
         if st.session_state['current_index'] < len(data):
             current_row = data.iloc[st.session_state['current_index']]
-            st.write(current_row)
+            # Extract only the required fields from the current row
+            st.write(f"### {current_row['TITLE']}")
+            st.write(f"**Company:** {current_row['COMPANY_NAME']}")
+            st.write(f"**Job Description:**")
+            st.write(current_row["cleaned_jd"])  # Ensures proper paragraph formatting
+            st.write("---")  # Adds a separator for clarity
 
             label = st.radio("Enter Label:", options=[0, 1, 9], horizontal=True)
 
