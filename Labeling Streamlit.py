@@ -49,9 +49,11 @@ if 'credentials' in st.session_state:
     - **From the dropdown**, carefully select the correct file for your assigned task.
     - Each time you log in, the app will **automatically resume from the last company** where you left off.
     - **To label data**, click one of the buttons: **0 (Reject), 1 (Accept), or 9 (Unsure).**
+    - **You can only do up to 20 'Unsure' (9) labels.**
+    - **After that, you will only be able to label as 'Reject' (0) or 'Accept' (1).**
     - **For any queries about this web app, contact:**  
       - 📧 **Sai Shashank** (skudkuli@umd.edu)  
-      - 📧 **Sarvagya Singh** (singh007@umd.edu)
+      - 📧 **Sarvagya** (singh007@umd.edu)
     """)
 
     def fetch_drive_files():
@@ -73,6 +75,13 @@ if 'credentials' in st.session_state:
         last_filled_index = data[user_label_column].last_valid_index()
         current_index = 0 if last_filled_index is None else last_filled_index + 1
 
+        unsure_count = (data[user_label_column] == 9).sum()
+
+        st.progress((current_index + 1) / len(data))
+        st.write(
+            f"✅ You have labeled {current_index + 1} out of {len(data)} rows ({round((current_index + 1) / len(data) * 100)}% complete).")
+        st.write(f"⚠️ Unsure Count: {unsure_count}/20")
+
         if current_index < len(data):
             current_row = data.iloc[current_index]
             st.write(f"### {current_row['TITLE']}")
@@ -81,7 +90,7 @@ if 'credentials' in st.session_state:
             st.write(current_row["cleaned_jd"])
             st.write("---")
 
-            label = st.radio("Enter Label:", options=[0, 1, 9], horizontal=True)
+            label = st.radio("Enter Label:", options=[0, 1] + ([9] if unsure_count < 20 else []), horizontal=True)
 
             if st.button("Submit Label"):
                 data.at[current_index, user_label_column] = label
