@@ -13,7 +13,7 @@ REVOKE_TOKEN_URL = st.secrets["google"]["revoke_token_url"]
 CLIENT_ID = st.secrets["google"]["client_id"]
 CLIENT_SECRET = st.secrets["google"]["client_secret"]
 REDIRECT_URI = st.secrets["google"]["redirect_uri"]
-SCOPE = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email"
+SCOPE = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid"
 
 
 oauth2 = OAuth2Component(
@@ -49,9 +49,12 @@ if 'credentials' in st.session_state:
     # Fetch CSV files from Google Drive
     def fetch_drive_files():
         files = drive_service.files().list(q="mimeType='text/csv'", fields='files(id, name)').execute()
+        st.write("Google Drive API Response:", files)
         return {file['name']: file['id'] for file in files.get('files', [])}
 
+
     files = fetch_drive_files()
+
     selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
 
     if selected_file_name:
