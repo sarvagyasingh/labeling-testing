@@ -83,7 +83,7 @@ if 'credentials' in st.session_state:
                 ).execute()
 
                 st.success(f"Row {st.session_state['current_index']} labeled successfully.")
-                st.experimental_rerun()
+                st.rerun()
 
         st.progress((st.session_state['current_index'] + 1) / len(data))
     else:
