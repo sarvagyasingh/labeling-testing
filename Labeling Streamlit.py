@@ -43,6 +43,17 @@ if 'credentials' in st.session_state:
 
     st.title(f"Dataset Labeling for {user_email}")
 
+    st.markdown("""
+    ### 📌 Instructions:
+    - **Sign in with your UMD ID** to access the labeling tool.
+    - **From the dropdown**, carefully select the correct file for your assigned task.
+    - Each time you log in, the app will **automatically resume from the last company** where you left off.
+    - **To label data**, click one of the buttons: **0 (Reject), 1 (Accept), or 9 (Unsure).**
+    - **For any queries about this web app, contact:**  
+      - 📧 **Sai Shashank** (skudkuli@umd.edu)  
+      - 📧 **Sarvagya Singh** (singh007@umd.edu)
+    """)
+
     def fetch_drive_files():
         files = drive_service.files().list(q="mimeType='text/csv' and trashed=false", fields='files(id, name)').execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
