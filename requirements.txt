@@ -1,1 +1,5 @@
-streamlit, google-auth, google-auth-oauthlib, google-api-python-client, pandas
+streamlit
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pandas
