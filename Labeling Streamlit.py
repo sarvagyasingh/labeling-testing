@@ -54,7 +54,7 @@ if 'credentials' in st.session_state:
     - **After that, you will only be able to label as 'Reject' (0) or 'Accept' (1).**
     - **For any queries about this web app, contact:**  
       - 📧 **Sai Shashank** (skudkuli@umd.edu)  
-      - 📧 **Sarvagya** (singh007@umd.edu)
+      - 📧 **Sarvagya Singh** (singh007@umd.edu)
     """)
 
     def fetch_drive_files():
