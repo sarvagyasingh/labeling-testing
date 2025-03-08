@@ -21,17 +21,22 @@ oauth2 = OAuth2Component(
 )
 
 if 'credentials' not in st.session_state:
-    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI, SCOPE)
-    st.write("Oauth result: ", result)
+    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI)
+
+    st.write("OAuth Result:", result)  # Debugging output
+
     if result:
-        # Check the keys returned in the result
-        if "access_token" in result:
-            creds = Credentials(token=result["access_token"])
+        # Extract 'access_token' from the nested 'token' dictionary
+        token_data = result.get("token", {})  # Get 'token' dictionary safely
+        access_token = token_data.get("access_token")  # Extract access_token
+
+        if access_token:
+            creds = Credentials(token=access_token)
             st.session_state["credentials"] = creds
             st.experimental_rerun()
         else:
-            st.error("OAuth response is missing 'access_token'. Full response:")
-            st.json(result)
+            st.error("OAuth response missing 'access_token'. Full response:")
+            st.json(result)  # Show full response for debugging
 
 if 'credentials' in st.session_state:
     creds = st.session_state['credentials']
