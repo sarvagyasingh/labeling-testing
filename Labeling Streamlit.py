@@ -21,10 +21,11 @@ oauth2 = OAuth2Component(
 )
 
 if 'credentials' not in st.session_state:
-    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI, SCOPE=SCOPE)
+    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI, SCOPE)
     if result:
         creds = Credentials(token=result["access_token"])
         st.session_state['credentials'] = creds
+        st.experimental_rerun()
 
 if 'credentials' in st.session_state:
     creds = st.session_state['credentials']
