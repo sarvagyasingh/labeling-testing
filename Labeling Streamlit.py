@@ -5,6 +5,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from streamlit_oauth import OAuth2Component
+import threading
 
 AUTHORIZE_URL = st.secrets["google"]["authorize_url"]
 TOKEN_URL = st.secrets["google"]["token_url"]
@@ -60,6 +61,15 @@ if 'credentials' in st.session_state:
         files = drive_service.files().list(q="mimeType='text/csv' and trashed=false", fields='files(id, name)').execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
 
+    def save_to_drive(file_id, data):
+        updated_csv = BytesIO()
+        data.to_csv(updated_csv, index=False)
+        updated_csv.seek(0)
+        drive_service.files().update(
+            fileId=file_id,
+            media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
+        ).execute()
+
     files = fetch_drive_files()
     selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
 
@@ -96,14 +106,7 @@ if 'credentials' in st.session_state:
                 data.at[current_index, user_label_column] = label
                 current_index += 1
 
-                updated_csv = BytesIO()
-                data.to_csv(updated_csv, index=False)
-                updated_csv.seek(0)
-
-                drive_service.files().update(
-                    fileId=file_id,
-                    media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
-                ).execute()
+                threading.Thread(target=save_to_drive, args=(file_id, data), daemon=True).start()
 
                 st.success(f"Row {current_index} labeled successfully.")
                 st.rerun()
