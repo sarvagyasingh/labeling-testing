@@ -109,7 +109,7 @@ if 'credentials' in st.session_state:
 
         st.progress((current_index) / len(data))
         st.write(
-            f"✅ You have labeled {current_index+1} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
+            f"✅ You have labeled {current_index} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
         )
         st.write(f"⚠️ Unsure Count: {unsure_count}/20")
     else:
