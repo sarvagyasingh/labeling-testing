@@ -83,7 +83,10 @@ if 'credentials' in st.session_state:
             data[user_label_column] = None
 
         last_filled_index = data[user_label_column].last_valid_index()
-        current_index = 0 if last_filled_index is None else last_filled_index + 1
+        if "current_index" not in st.session_state:
+            st.session_state["current_index"] = 0 if last_filled_index is None else last_filled_index + 1
+
+        current_index = st.session_state["current_index"]
 
         unsure_count = (data[user_label_column] == 9).sum()
 
@@ -98,12 +101,9 @@ if 'credentials' in st.session_state:
             label = st.radio("Enter Label:", options=[0, 1] + ([9] if unsure_count < 20 else []), horizontal=True)
 
             if st.button("Submit Label"):
+                st.session_state["current_index"] = current_index + 1
                 data.at[current_index, user_label_column] = label
                 threading.Thread(target=save_to_drive, args=(file_id, data), daemon=True).start()
-                current_index += 1
-
-
-
                 st.success(f"Row {current_index} labeled successfully.")
                 st.rerun()
 
