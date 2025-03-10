@@ -87,7 +87,6 @@ if 'credentials' in st.session_state:
 
         unsure_count = (data[user_label_column] == 9).sum()
 
-        st.progress((current_index + 1) / len(data))
         st.write(
             f"✅ You have labeled {current_index + 1} out of {len(data)} rows ({round((current_index + 1) / len(data) * 100)}% complete).")
         st.write(f"⚠️ Unsure Count: {unsure_count}/20")
@@ -112,8 +111,10 @@ if 'credentials' in st.session_state:
                 st.success(f"Row {current_index} labeled successfully.")
                 st.rerun()
 
-        st.progress((current_index + 1) / len(data))
+        st.progress((current_index) / len(data))
         st.write(
-            f"✅ You have labeled {current_index + 1} out of {len(data)} rows ({round((current_index + 1) / len(data) * 100)}% complete).")
+            f"✅ You have labeled {current_index} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
+        )
+        st.write(f"⚠️ Unsure Count: {unsure_count}/20")
     else:
         st.info("Please select a file to start labeling.")
