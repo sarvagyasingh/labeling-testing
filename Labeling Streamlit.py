@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from streamlit_oauth import OAuth2Component
 import threading
+import streamlit.components.v1 as components
 
 AUTHORIZE_URL = st.secrets["google"]["authorize_url"]
 TOKEN_URL = st.secrets["google"]["token_url"]
@@ -14,7 +15,22 @@ REVOKE_TOKEN_URL = st.secrets["google"]["revoke_token_url"]
 CLIENT_ID = st.secrets["google"]["client_id"]
 CLIENT_SECRET = st.secrets["google"]["client_secret"]
 REDIRECT_URI = st.secrets["google"]["redirect_uri"]
+GA4_MEASUREMENT_ID = st.secrets["ga4"]["measurement_id"]
 SCOPE = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid"
+
+GA4_SNIPPET = f"""
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA4_MEASUREMENT_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+
+  gtag('config', '{GA4_MEASUREMENT_ID}');
+</script>
+"""
+
+components.html(GA4_SNIPPET, height=0, width=0)
+
 
 oauth2 = OAuth2Component(
     CLIENT_ID, CLIENT_SECRET, AUTHORIZE_URL, TOKEN_URL, REFRESH_TOKEN_URL, REVOKE_TOKEN_URL
