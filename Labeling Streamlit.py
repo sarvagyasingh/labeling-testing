@@ -78,7 +78,7 @@ if 'credentials' in st.session_state:
         file_content = drive_service.files().get_media(fileId=file_id).execute()
         data = pd.read_csv(BytesIO(file_content))
 
-        user_label_column = f"{user_email}_ai_labels"
+        user_label_column = f"RA_AI_Labels"
         if user_label_column not in data.columns:
             data[user_label_column] = None
 
