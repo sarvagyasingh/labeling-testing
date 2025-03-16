@@ -29,6 +29,8 @@ GA4_SNIPPET = f"""
 </script>
 """
 
+st.markdown(f"<script>{GA4_SNIPPET}</script>", unsafe_allow_html=True)
+
 oauth2 = OAuth2Component(
     CLIENT_ID, CLIENT_SECRET, AUTHORIZE_URL, TOKEN_URL, REFRESH_TOKEN_URL, REVOKE_TOKEN_URL
 )
@@ -49,7 +51,6 @@ if 'credentials' not in st.session_state:
             st.json(result)
 
 if 'credentials' in st.session_state:
-    components.html(GA4_SNIPPET, height=0, width=0)
     creds = st.session_state['credentials']
     drive_service = build('drive', 'v3', credentials=creds)
     user_info_service = build('oauth2', 'v2', credentials=creds)
