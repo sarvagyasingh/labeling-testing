@@ -8,16 +8,6 @@ from streamlit_oauth import OAuth2Component
 import threading
 import streamlit.components.v1 as components
 
-def save_to_drive(file_id, data):
-    updated_csv = BytesIO()
-    data.to_csv(updated_csv, index=False)
-    updated_csv.seek(0)
-    drive_service.files().update(
-        fileId=file_id,
-        media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
-    ).execute()
-
-
 AUTHORIZE_URL = st.secrets["google"]["authorize_url"]
 TOKEN_URL = st.secrets["google"]["token_url"]
 REFRESH_TOKEN_URL = st.secrets["google"]["refresh_token_url"]
