@@ -50,7 +50,7 @@ if 'credentials' not in st.session_state:
             st.error("OAuth response missing 'access_token'. Full response:")
             st.json(result)
 
-if 'credentials' in st.session_state:
+elif 'credentials' in st.session_state:
     creds = st.session_state['credentials']
     drive_service = build('drive', 'v3', credentials=creds)
     user_info_service = build('oauth2', 'v2', credentials=creds)
@@ -72,28 +72,27 @@ if 'credentials' in st.session_state:
       - 📧 **Sarvagya Singh** (singh007@umd.edu)
     """)
 
-    def fetch_drive_files():
+    @st.cache_data(show_spinner=False)
+    def fetch_drive_files_cached():
         files = drive_service.files().list(q="mimeType='text/csv' and trashed=false", fields='files(id, name)').execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
 
-    def save_to_drive(file_id, data):
-        updated_csv = BytesIO()
-        data.to_csv(updated_csv, index=False)
-        updated_csv.seek(0)
-        drive_service.files().update(
-            fileId=file_id,
-            media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
-        ).execute()
-
-    files = fetch_drive_files()
-    selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
+    files = fetch_drive_files_cached()
+    selected_file_name = st.selectbox("Select a CSV file:", options=list(files.keys()) if files else [])
 
     if selected_file_name:
         file_id = files[selected_file_name]
-        file_content = drive_service.files().get_media(fileId=file_id).execute()
-        data = pd.read_csv(BytesIO(file_content))
 
-        user_label_column = f"RA_AI_Labels"
+        @st.cache_data(show_spinner=False)
+        def load_csv(file_id):
+            file_content = drive_service.files().get_media(fileId=file_id).execute()
+            return pd.read_csv(BytesIO(file_content))
+
+        if "data" not in st.session_state:
+            st.session_state["data"] = load_csv(file_id)
+
+        data = st.session_state["data"]
+        user_label_column = "RA_AI_Labels"
         if user_label_column not in data.columns:
             data[user_label_column] = None
 
@@ -102,29 +101,36 @@ if 'credentials' in st.session_state:
             st.session_state["current_index"] = 0 if last_filled_index is None else last_filled_index + 1
 
         current_index = st.session_state["current_index"]
-
         unsure_count = (data[user_label_column] == 9).sum()
 
         if current_index < len(data):
             current_row = data.iloc[current_index]
             st.write(f"### {current_row['TITLE']}")
             st.write(f"**Company:** {current_row['COMPANY_NAME']}")
-            st.write(f"**Job Description:**")
+            st.write("**Job Description:**")
             st.write(current_row["cleaned_jd"])
             st.write("---")
 
-            label = st.radio("Enter Label:", options=[0, 1] + ([9] if unsure_count < 20 else []), horizontal=True)
+            if "label_choice" not in st.session_state:
+                st.session_state["label_choice"] = 0
+
+            st.radio(
+                "Enter Label:",
+                options=[0, 1] + ([9] if unsure_count < 20 else []),
+                key="label_choice",
+                horizontal=True
+            )
 
             if st.button("Submit Label"):
+                data.at[current_index, user_label_column] = st.session_state["label_choice"]
                 st.session_state["current_index"] = current_index + 1
-                data.at[current_index, user_label_column] = label
                 threading.Thread(target=save_to_drive, args=(file_id, data), daemon=True).start()
                 st.success(f"Row {current_index} labeled successfully.")
                 st.rerun()
 
-        st.progress((current_index) / len(data))
+        st.progress(current_index / len(data))
         st.write(
-            f"✅ You have labeled {current_index} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
+            f"✅ You have labeled {current_index} out of {len(data)} rows ({round(current_index / len(data) * 100)}% complete)."
         )
         st.write(f"⚠️ Unsure Count: {unsure_count}/20")
     else:
