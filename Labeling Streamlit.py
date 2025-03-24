@@ -129,14 +129,12 @@ if 'credentials' in st.session_state:
             if "label_choice" not in st.session_state:
                 st.session_state["label_choice"] = 0
 
-            label_choice = st.session_state.get("label_choice", 0)
-            selected_label = st.radio(
+            st.radio(
                 "Label this job:",
                 options=[0, 1] + ([9] if unsure_count < 20 else []),
-                index=[0, 1, 9].index(label_choice) if label_choice in [0, 1, 9] else 0,
+                key="label_choice",
                 horizontal=True
             )
-            st.session_state["label_choice"] = selected_label
 
             if st.button("Submit Label"):
                 data.at[current_index, label_col] = st.session_state["label_choice"]
