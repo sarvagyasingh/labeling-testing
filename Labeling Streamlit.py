@@ -79,14 +79,13 @@ if 'credentials' in st.session_state:
         ).execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
 
-    def load_csv(file_id, user_email):
-        """Load CSV after ownership check"""
+    @st.cache_data(show_spinner=False)
+    def load_csv_cached(file_id, user_email):
         metadata = drive_service.files().get(fileId=file_id, fields="owners").execute()
         owners = [o['emailAddress'] for o in metadata['owners']]
         if user_email not in owners:
             st.error("⛔ You do not own this file.")
             st.stop()
-
         file_content = drive_service.files().get_media(fileId=file_id).execute()
         return pd.read_csv(BytesIO(file_content))
 
@@ -105,7 +104,7 @@ if 'credentials' in st.session_state:
 
     if selected_file_name:
         file_id = files[selected_file_name]
-        data = load_csv(file_id, user_email)
+        data = load_csv_cached(file_id, user_email)
 
         label_col = "RA_AI_Labels"
         if label_col not in data.columns:
