@@ -74,7 +74,7 @@ if 'credentials' in st.session_state:
     def fetch_drive_files(user_email):
         """List only user-specific CSV files"""
         files = drive_service.files().list(
-            q=f"mimeType='text/csv' and trashed=false and name contains '{user_email}'",
+            q="mimeType='text/csv' and trashed=false",
             fields='files(id, name)'
         ).execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
