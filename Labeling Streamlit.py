@@ -14,7 +14,6 @@ REVOKE_TOKEN_URL = st.secrets["google"]["revoke_token_url"]
 CLIENT_ID = st.secrets["google"]["client_id"]
 CLIENT_SECRET = st.secrets["google"]["client_secret"]
 REDIRECT_URI = st.secrets["google"]["redirect_uri"]
-GA4_MEASUREMENT_ID = st.secrets["ga4"]["measurement_id"]
 SCOPE = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid"
 
 oauth2 = OAuth2Component(
