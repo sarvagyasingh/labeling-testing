@@ -8,6 +8,7 @@ from streamlit_oauth import OAuth2Component
 import threading
 import streamlit.components.v1 as components
 
+# ==== CONFIG ====
 AUTHORIZE_URL = st.secrets["google"]["authorize_url"]
 TOKEN_URL = st.secrets["google"]["token_url"]
 REFRESH_TOKEN_URL = st.secrets["google"]["refresh_token_url"]
@@ -18,22 +19,20 @@ REDIRECT_URI = st.secrets["google"]["redirect_uri"]
 GA4_MEASUREMENT_ID = st.secrets["ga4"]["measurement_id"]
 SCOPE = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid"
 
+# ==== GOOGLE ANALYTICS SNIPPET ====
 GA4_SNIPPET = f"""
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA4_MEASUREMENT_ID}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){{dataLayer.push(arguments);}}
   gtag('js', new Date());
-
   gtag('config', '{GA4_MEASUREMENT_ID}');
 </script>
 """
-
 st.markdown(f"<script>{GA4_SNIPPET}</script>", unsafe_allow_html=True)
 
-oauth2 = OAuth2Component(
-    CLIENT_ID, CLIENT_SECRET, AUTHORIZE_URL, TOKEN_URL, REFRESH_TOKEN_URL, REVOKE_TOKEN_URL
-)
+# ==== OAUTH SETUP ====
+oauth2 = OAuth2Component(CLIENT_ID, CLIENT_SECRET, AUTHORIZE_URL, TOKEN_URL, REFRESH_TOKEN_URL, REVOKE_TOKEN_URL)
 
 if 'credentials' not in st.session_state:
     result = oauth2.authorize_button("Log in with Google", REDIRECT_URI, SCOPE)
@@ -72,11 +71,27 @@ if 'credentials' in st.session_state:
       - 📧 **Sarvagya Singh** (singh007@umd.edu)
     """)
 
-    def fetch_drive_files():
-        files = drive_service.files().list(q="mimeType='text/csv' and trashed=false", fields='files(id, name)').execute()
+    def fetch_drive_files(user_email):
+        """List only user-specific CSV files"""
+        files = drive_service.files().list(
+            q=f"mimeType='text/csv' and trashed=false and name contains '{user_email}'",
+            fields='files(id, name)'
+        ).execute()
         return {file['name']: file['id'] for file in files.get('files', [])}
 
+    def load_csv(file_id, user_email):
+        """Load CSV after ownership check"""
+        metadata = drive_service.files().get(fileId=file_id, fields="owners").execute()
+        owners = [o['emailAddress'] for o in metadata['owners']]
+        if user_email not in owners:
+            st.error("⛔ You do not own this file.")
+            st.stop()
+
+        file_content = drive_service.files().get_media(fileId=file_id).execute()
+        return pd.read_csv(BytesIO(file_content))
+
     def save_to_drive(file_id, data):
+        """Upload CSV back to Google Drive"""
         updated_csv = BytesIO()
         data.to_csv(updated_csv, index=False)
         updated_csv.seek(0)
@@ -85,47 +100,52 @@ if 'credentials' in st.session_state:
             media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
         ).execute()
 
-    files = fetch_drive_files()
-    selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
+    files = fetch_drive_files(user_email)
+    selected_file_name = st.selectbox("Select your CSV file:", options=files.keys())
 
     if selected_file_name:
         file_id = files[selected_file_name]
-        file_content = drive_service.files().get_media(fileId=file_id).execute()
-        data = pd.read_csv(BytesIO(file_content))
+        data = load_csv(file_id, user_email)
 
-        user_label_column = f"RA_AI_Labels"
-        if user_label_column not in data.columns:
-            data[user_label_column] = None
+        label_col = "RA_AI_Labels"
+        if label_col not in data.columns:
+            data[label_col] = None
 
-        last_filled_index = data[user_label_column].last_valid_index()
+        last_filled_index = data[label_col].last_valid_index()
         if "current_index" not in st.session_state:
             st.session_state["current_index"] = 0 if last_filled_index is None else last_filled_index + 1
 
         current_index = st.session_state["current_index"]
-
-        unsure_count = (data[user_label_column] == 9).sum()
+        unsure_count = (data[label_col] == 9).sum()
 
         if current_index < len(data):
-            current_row = data.iloc[current_index]
-            st.write(f"### {current_row['TITLE']}")
-            st.write(f"**Company:** {current_row['COMPANY_NAME']}")
-            st.write(f"**Job Description:**")
-            st.write(current_row["cleaned_jd"])
+            row = data.iloc[current_index]
+            st.subheader(f"{row['TITLE']}")
+            st.write(f"**Company:** {row['COMPANY_NAME']}")
+            st.write("**Job Description:**")
+            st.write(row["cleaned_jd"])
             st.write("---")
 
-            label = st.radio("Enter Label:", options=[0, 1] + ([9] if unsure_count < 20 else []), horizontal=True)
+            if "label_choice" not in st.session_state:
+                st.session_state["label_choice"] = 0
+
+            st.radio(
+                "Label this job:",
+                options=[0, 1] + ([9] if unsure_count < 20 else []),
+                key="label_choice",
+                horizontal=True
+            )
 
             if st.button("Submit Label"):
-                st.session_state["current_index"] = current_index + 1
-                data.at[current_index, user_label_column] = label
+                data.at[current_index, label_col] = st.session_state["label_choice"]
+                st.session_state["current_index"] += 1
                 threading.Thread(target=save_to_drive, args=(file_id, data), daemon=True).start()
                 st.success(f"Row {current_index} labeled successfully.")
                 st.rerun()
 
-        st.progress((current_index) / len(data))
-        st.write(
-            f"✅ You have labeled {current_index} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
-        )
-        st.write(f"⚠️ Unsure Count: {unsure_count}/20")
+        st.progress(current_index / len(data))
+        st.write(f"✅ Labeled: {current_index} / {len(data)}")
+        st.write(f"⚠️ Unsure Labels Used: {unsure_count}/20")
+
     else:
-        st.info("Please select a file to start labeling.")
+        st.info("Please select a file to begin labeling.")
