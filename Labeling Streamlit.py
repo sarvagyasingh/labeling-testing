@@ -85,7 +85,11 @@ if 'credentials' in st.session_state:
             file_content = drive_service.files().get_media(fileId=file_id).execute()
             return pd.read_csv(BytesIO(file_content))
 
-        data = load_csv(file_id, user_email)
+        if "data" not in st.session_state or st.session_state.get("file_id") != file_id:
+            st.session_state["data"] = load_csv(file_id, user_email)
+            st.session_state["file_id"] = file_id
+
+        data = st.session_state["data"]
 
         user_label_column = f"RA_AI_Labels"
         if user_label_column not in data.columns:
