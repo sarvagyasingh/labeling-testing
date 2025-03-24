@@ -130,8 +130,7 @@ if 'credentials' in st.session_state:
             selected_label = st.radio(
                 "Label this job:",
                 options=radio_options,
-                horizontal=True,
-                key=f"radio_{current_index}"
+                horizontal=True
             )
 
             if st.button("Submit Label"):
