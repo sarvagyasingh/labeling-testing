@@ -75,6 +75,13 @@ if 'credentials' in st.session_state:
     """)
 
     files = fetch_drive_files()
+    if st.session_state.get("selected_file") != selected_file_name:
+        # Clear session state related to previous file
+        st.session_state["selected_file"] = selected_file_name
+        st.session_state.pop("data", None)
+        st.session_state.pop("file_id", None)
+        st.session_state.pop("current_index", None)
+        st.rerun()
     selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
 
     if selected_file_name:
