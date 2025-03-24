@@ -126,23 +126,15 @@ if 'credentials' in st.session_state:
             st.write(row["cleaned_jd"])
             st.write("---")
 
-            if "label_choice" not in st.session_state:
-                st.session_state["label_choice"] = 0
-
-            if "label_choice" not in st.session_state:
-                st.session_state["label_choice"] = 0
-
             radio_options = [0, 1] + ([9] if unsure_count < 20 else [])
-
             selected_label = st.radio(
                 "Label this job:",
                 options=radio_options,
-                key="label_choice",
                 horizontal=True
             )
 
             if st.button("Submit Label"):
-                data.at[current_index, label_col] = st.session_state["label_choice"]
+                data.at[current_index, label_col] = selected_label
                 st.session_state["current_index"] += 1
                 threading.Thread(target=save_to_drive, args=(file_id, data), daemon=True).start()
                 st.success(f"Row {current_index} labeled successfully.")
