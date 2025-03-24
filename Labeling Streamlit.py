@@ -6,7 +6,6 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from streamlit_oauth import OAuth2Component
 import threading
-import streamlit.components.v1 as components
 
 AUTHORIZE_URL = st.secrets["google"]["authorize_url"]
 TOKEN_URL = st.secrets["google"]["token_url"]
@@ -18,25 +17,29 @@ REDIRECT_URI = st.secrets["google"]["redirect_uri"]
 GA4_MEASUREMENT_ID = st.secrets["ga4"]["measurement_id"]
 SCOPE = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email openid"
 
-GA4_SNIPPET = f"""
-<script async src="https://www.googletagmanager.com/gtag/js?id={GA4_MEASUREMENT_ID}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){{dataLayer.push(arguments);}}
-  gtag('js', new Date());
-
-  gtag('config', '{GA4_MEASUREMENT_ID}');
-</script>
-"""
-
-st.markdown(f"<script>{GA4_SNIPPET}</script>", unsafe_allow_html=True)
-
 oauth2 = OAuth2Component(
     CLIENT_ID, CLIENT_SECRET, AUTHORIZE_URL, TOKEN_URL, REFRESH_TOKEN_URL, REVOKE_TOKEN_URL
 )
 
+def fetch_drive_files():
+    files = drive_service.files().list(q="mimeType='text/csv' and trashed=false", fields='files(id, name)').execute()
+    return {file['name']: file['id'] for file in files.get('files', [])}
+
+
+def save_to_drive(file_id, data):
+    updated_csv = BytesIO()
+    data.to_csv(updated_csv, index=False)
+    updated_csv.seek(0)
+    drive_service.files().update(
+        fileId=file_id,
+        media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
+    ).execute()
+
 if 'credentials' not in st.session_state:
-    result = oauth2.authorize_button("Log in with Google", REDIRECT_URI, SCOPE)
+    result = oauth2.authorize_button(
+        "Log in with Google", REDIRECT_URI, SCOPE,
+        extras_params={"access_type": "offline", "prompt": "consent"}
+    )
 
     if result:
         token_data = result.get("token", {})
@@ -72,26 +75,18 @@ if 'credentials' in st.session_state:
       - 📧 **Sarvagya Singh** (singh007@umd.edu)
     """)
 
-    def fetch_drive_files():
-        files = drive_service.files().list(q="mimeType='text/csv' and trashed=false", fields='files(id, name)').execute()
-        return {file['name']: file['id'] for file in files.get('files', [])}
-
-    def save_to_drive(file_id, data):
-        updated_csv = BytesIO()
-        data.to_csv(updated_csv, index=False)
-        updated_csv.seek(0)
-        drive_service.files().update(
-            fileId=file_id,
-            media_body=MediaIoBaseUpload(updated_csv, mimetype='text/csv')
-        ).execute()
-
     files = fetch_drive_files()
     selected_file_name = st.selectbox("Select a CSV file:", options=files.keys())
 
     if selected_file_name:
         file_id = files[selected_file_name]
-        file_content = drive_service.files().get_media(fileId=file_id).execute()
-        data = pd.read_csv(BytesIO(file_content))
+
+        @st.cache_data(show_spinner=False)
+        def load_csv(file_id: str, user_email: str) -> pd.DataFrame:
+            file_content = drive_service.files().get_media(fileId=file_id).execute()
+            return pd.read_csv(BytesIO(file_content))
+
+        data = load_csv(file_id, user_email)
 
         user_label_column = f"RA_AI_Labels"
         if user_label_column not in data.columns:
