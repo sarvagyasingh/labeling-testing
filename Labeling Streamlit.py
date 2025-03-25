@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from streamlit_oauth import OAuth2Component
 import threading
+import time
 
 AUTHORIZE_URL = st.secrets["google"]["authorize_url"]
 TOKEN_URL = st.secrets["google"]["token_url"]
@@ -89,12 +90,12 @@ if 'credentials' in st.session_state:
         file_id = files[selected_file_name]
 
         @st.cache_data(show_spinner=False)
-        def load_csv(file_id: str, user_email: str) -> pd.DataFrame:
+        def load_csv(file_id: str, user_email: str, cache_buster=None) -> pd.DataFrame:
             file_content = drive_service.files().get_media(fileId=file_id).execute()
             return pd.read_csv(BytesIO(file_content))
 
         if "data" not in st.session_state or st.session_state.get("file_id") != file_id:
-            st.session_state["data"] = load_csv(file_id, user_email)
+            st.session_state["data"] = load_csv(file_id, user_email, cache_buster=time.time())
             st.session_state["file_id"] = file_id
 
         data = st.session_state["data"]
