@@ -111,6 +111,8 @@ if 'credentials' in st.session_state:
         current_index = st.session_state["current_index"]
 
         unsure_count = (data[user_label_column] == 9).sum()
+        accept_count = (data[user_label_column] == 1).sum()
+        reject_count = (data[user_label_column] == 0).sum()
 
         if current_index < len(data):
             current_row = data.iloc[current_index]
@@ -134,5 +136,7 @@ if 'credentials' in st.session_state:
             f"✅ You have labeled {current_index} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
         )
         st.write(f"⚠️ Unsure Count: {unsure_count}/20")
+        st.write(f"🤖 AI (1) Count: {accept_count}")
+        st.write(f"❌ Not AI (0) Count: {reject_count}")
     else:
         st.info("Please select a file to start labeling.")
