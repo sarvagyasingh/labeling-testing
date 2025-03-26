@@ -136,7 +136,7 @@ if 'credentials' in st.session_state:
             f"✅ You have labeled {current_index} out of {len(data)} rows ({round((current_index) / len(data) * 100)}% complete)."
         )
         st.write(f"⚠️ Unsure Count: {unsure_count}/20")
-        st.write(f"✅ AI (1) Count: {accept_count}")
+        st.write(f"🤖 AI (1) Count: {accept_count}")
         st.write(f"❌ Not AI (0) Count: {reject_count}")
     else:
         st.info("Please select a file to start labeling.")
